@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/test_ecs.dir/tests/test_ecs.cpp.o -o test_ecs 

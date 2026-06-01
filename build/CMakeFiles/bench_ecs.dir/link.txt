@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/bench_ecs.dir/benchmarks/bench_ecs.cpp.o -o bench_ecs 

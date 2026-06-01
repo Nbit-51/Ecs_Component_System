@@ -1,0 +1,574 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:transparent}
+.root{display:flex;flex-direction:column;gap:12px;padding:8px 0}
+.tabs{display:flex;gap:6px;margin-bottom:4px}
+.tab{padding:6px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;background:transparent;color:var(--color-text-secondary);transition:all .15s}
+.tab.active{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary)}
+.panel{display:none}.panel.active{display:flex;flex-direction:column;gap:10px}
+.sim-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+canvas{display:block;width:100%;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary)}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px}
+.metric-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:2px}
+.metric-val{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary)}
+.ctrl-group input[type=range]{width:80px}
+.btn{padding:5px 12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;background:transparent;color:var(--color-text-primary)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.danger{border-color:var(--color-border-danger);color:var(--color-text-danger)}
+.legend{display:flex;gap:10px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+.mem-vis{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;font-size:11px}
+.mem-title{font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-secondary)}
+.mem-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.mem-label{width:80px;color:var(--color-text-secondary);font-size:11px}
+.mem-bar-wrap{flex:1;height:14px;background:var(--color-background-primary);border-radius:4px;overflow:hidden;display:flex}
+.mem-seg{height:100%;transition:width .3s;border-radius:2px}
+.cache-row{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
+.cache-cell{width:18px;height:18px;border-radius:3px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:500;transition:background .2s}
+.hit{background:#22c55e;color:#fff}
+.miss{background:#ef4444;color:#fff}
+.idle{background:var(--color-background-primary);color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary)}
+.archetype-vis{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px}
+.arch-title{font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-secondary)}
+.arch-table{width:100%;border-collapse:collapse;font-size:11px}
+.arch-table th{text-align:left;padding:3px 6px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.arch-table td{padding:3px 6px;color:var(--color-text-primary)}
+.arch-table tr:hover td{background:var(--color-background-primary)}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;margin:1px}
+.tag.pos{background:#dbeafe;color:#1d4ed8}.tag.vel{background:#dcfce7;color:#15803d}
+.tag.hp{background:#fce7f3;color:#be185d}.tag.ai{background:#fef3c7;color:#92400e}
+.tag.col{background:#f3e8ff;color:#7e22ce}.tag.snd{background:#e0f2fe;color:#0369a1}
+.sparse-vis{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px}
+.sparse-title{font-weight:500;font-size:12px;margin-bottom:8px;color:var(--color-text-secondary)}
+.sparse-arrays{display:flex;flex-direction:column;gap:6px}
+.arr-row{display:flex;align-items:center;gap:6px}
+.arr-name{width:56px;font-size:10px;color:var(--color-text-secondary);text-align:right}
+.arr-cells{display:flex;gap:2px}
+.arr-cell{width:28px;height:22px;border-radius:3px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:500}
+.arr-cell.filled{color:#fff}
+.arr-cell.empty{background:var(--color-background-primary);color:var(--color-text-tertiary);border:0.5px dashed var(--color-border-tertiary)}
+.arr-cell.highlighted{outline:2px solid #f59e0b;outline-offset:1px}
+.log{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:11px;font-family:var(--font-mono);max-height:80px;overflow-y:auto;color:var(--color-text-secondary)}
+.log-line{padding:1px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.log-line:last-child{border:none}
+.log-line.sys{color:#8b5cf6}.log-line.add{color:#22c55e}.log-line.rem{color:#ef4444}.log-line.upd{color:#f59e0b}
+</style>
+
+<div class="root">
+<div class="tabs">
+  <button class="tab active" onclick="showTab('sim3d')">3D ECS World</button>
+  <button class="tab" onclick="showTab('simflat')">ECS Architecture</button>
+</div>
+
+<div id="sim3d" class="panel active">
+  <div class="sim-row">
+    <div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;font-weight:500">3D ECS World — entities with live components</div>
+      <canvas id="c3d" height="300"></canvas>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="mem-vis">
+        <div class="mem-title">Component arrays in memory (SoA)</div>
+        <div class="mem-row"><div class="mem-label">pos[]</div><div class="mem-bar-wrap" id="bar-pos"></div></div>
+        <div class="mem-row"><div class="mem-label">vel[]</div><div class="mem-bar-wrap" id="bar-vel"></div></div>
+        <div class="mem-row"><div class="mem-label">health[]</div><div class="mem-bar-wrap" id="bar-hp"></div></div>
+        <div class="mem-row"><div class="mem-label">ai[]</div><div class="mem-bar-wrap" id="bar-ai"></div></div>
+        <div class="mem-title" style="margin-top:8px">CPU cache (64-byte lines)</div>
+        <div class="cache-row" id="cache-cells"></div>
+      </div>
+      <div class="archetype-vis">
+        <div class="arch-title">Archetypes</div>
+        <table class="arch-table">
+          <tr><th>Type</th><th>Components</th><th>Count</th></tr>
+          <tbody id="arch-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="info-grid">
+    <div class="metric"><div class="metric-label">Entities</div><div class="metric-val" id="m-ent">0</div></div>
+    <div class="metric"><div class="metric-label">Systems/frame</div><div class="metric-val" id="m-sys">4</div></div>
+    <div class="metric"><div class="metric-label">Cache hits</div><div class="metric-val" id="m-hit" style="color:#22c55e">0</div></div>
+    <div class="metric"><div class="metric-label">Cache misses</div><div class="metric-val" id="m-miss" style="color:#ef4444">0</div></div>
+  </div>
+  <div class="controls">
+    <div class="ctrl-group"><span>Entities</span><input type="range" id="ent-count" min="4" max="32" value="12" step="1" oninput="setEntityCount(+this.value)"><span id="ent-lbl">12</span></div>
+    <button class="btn" onclick="spawnEntity()">+ Spawn</button>
+    <button class="btn danger" onclick="killRandom()">- Kill random</button>
+    <button class="btn" onclick="runSystem('movement')">Run Movement</button>
+    <button class="btn" onclick="runSystem('ai')">Run AI</button>
+  </div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Warrior (Pos+Vel+HP+AI)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div>Arrow (Pos+Vel)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div>Tree (Pos+HP)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Boss (all)</div>
+  </div>
+  <div class="log" id="log3d"></div>
+</div>
+
+<div id="simflat" class="panel">
+  <div class="sim-row">
+    <div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;font-weight:500">Sparse Set — entity-component mapping</div>
+      <div class="sparse-vis">
+        <div class="sparse-title">Sparse Set internals for PositionComponent</div>
+        <div class="sparse-arrays" id="sparse-arrays"></div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:6px">Click an entity in the world view to highlight its slot</div>
+      </div>
+      <div class="sparse-vis" style="margin-top:8px">
+        <div class="sparse-title">Component assignment per entity</div>
+        <div id="comp-grid" style="display:flex;flex-direction:column;gap:4px;margin-top:4px"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;font-weight:500">System execution order</div>
+      <canvas id="cflat" height="280"></canvas>
+      <div class="log" id="logflat"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="stepSystem()">Step system</button>
+    <button class="btn" onclick="addRandomComp()">Add component</button>
+    <button class="btn danger" onclick="removeRandomComp()">Remove component</button>
+    <div class="ctrl-group"><span>Speed</span><input type="range" id="speed" min="0.5" max="4" value="1" step="0.5"><span id="speed-lbl">1x</span></div>
+  </div>
+  <div class="log" id="log-arch"></div>
+</div>
+</div>
+
+<script>
+const C = {
+  pos:'#3b82f6', vel:'#22c55e', hp:'#ec4899', ai:'#f59e0b', col:'#8b5cf6', snd:'#06b6d4',
+  warrior:'#3b82f6', arrow:'#f59e0b', tree:'#22c55e', boss:'#ef4444', neutral:'#94a3b8'
+}
+
+const COMP_COLORS = {pos:'#dbeafe',vel:'#dcfce7',hp:'#fce7f3',ai:'#fef3c7',col:'#f3e8ff',snd:'#e0f2fe'}
+const COMP_TEXT   = {pos:'#1d4ed8',vel:'#15803d',hp:'#be185d',ai:'#92400e',col:'#7e22ce',snd:'#0369a1'}
+
+let entities = [], nextId = 0, hitCount = 0, missCount = 0, selectedEnt = -1
+let sysActive = null, systemTimer = 0
+let flatSysIndex = 0
+const SYSTEMS = ['Input','MovementSystem','AISystem','CollisionSystem','RenderSystem']
+
+const ARCHETYPES = {
+  warrior:['pos','vel','hp','ai'],
+  arrow:  ['pos','vel'],
+  tree:   ['pos','hp'],
+  boss:   ['pos','vel','hp','ai','col','snd']
+}
+
+function makeEntity(type){
+  const id = nextId++
+  const comps = [...ARCHETYPES[type]]
+  return {
+    id, type, comps,
+    x: 30+Math.random()*220, y: 30+Math.random()*200, z: Math.random()*100,
+    vx:(Math.random()-.5)*1.2, vy:(Math.random()-.5)*1.2, vz:(Math.random()-.5)*0.5,
+    hp: type==='boss'?300:type==='warrior'?100:type==='tree'?50:1,
+    maxHp: type==='boss'?300:type==='warrior'?100:type==='tree'?50:1,
+    ai:'patrol', angle:Math.random()*Math.PI*2, r:8+(type==='boss'?8:type==='tree'?4:0),
+    color:C[type]||C.neutral, alive:true
+  }
+}
+
+function initEntities(n=12){
+  entities=[]
+  nextId=0
+  hitCount=0; missCount=0
+  const types = ['warrior','warrior','warrior','arrow','arrow','tree','tree','boss']
+  for(let i=0;i<n;i++) entities.push(makeEntity(types[i%types.length]))
+}
+initEntities()
+
+function spawnEntity(){
+  const t=['warrior','arrow','tree','boss'][Math.floor(Math.random()*4)]
+  entities.push(makeEntity(t))
+  addLog3d(`Spawned entity #${entities[entities.length-1].id} (${t})`,'add')
+}
+
+function killRandom(){
+  const live = entities.filter(e=>e.alive)
+  if(!live.length) return
+  const e = live[Math.floor(Math.random()*live.length)]
+  e.alive = false
+  entities = entities.filter(x=>x.alive)
+  addLog3d(`Killed entity #${e.id} (${e.type})`,'rem')
+}
+
+function setEntityCount(n){
+  document.getElementById('ent-lbl').textContent = n
+  initEntities(n)
+}
+
+function runSystem(s){
+  sysActive=s; systemTimer=30
+  addLog3d(`Running ${s}System on ${entities.filter(e=>e.comps.includes('vel')).length} entities with vel component`,'sys')
+  hitCount += entities.filter(e=>e.comps.includes('vel')).length
+  missCount += Math.max(0,entities.length - entities.filter(e=>e.comps.includes('vel')).length)
+}
+
+function addLog3d(msg,cls=''){
+  const el=document.getElementById('log3d')
+  const d=document.createElement('div')
+  d.className='log-line '+(cls||'')
+  d.textContent='> '+msg
+  el.appendChild(d); el.scrollTop=el.scrollHeight
+  if(el.children.length>40) el.removeChild(el.firstChild)
+}
+
+function addLogFlat(msg,cls=''){
+  const el=document.getElementById('logflat')
+  const d=document.createElement('div')
+  d.className='log-line '+(cls||'')
+  d.textContent='> '+msg
+  el.appendChild(d); el.scrollTop=el.scrollHeight
+  if(el.children.length>20) el.removeChild(el.firstChild)
+}
+
+function stepSystem(){
+  flatSysIndex=(flatSysIndex+1)%SYSTEMS.length
+  addLogFlat(`Executing ${SYSTEMS[flatSysIndex]}...`,'sys')
+}
+
+function addRandomComp(){
+  const live=entities.filter(e=>e.alive)
+  if(!live.length) return
+  const e=live[Math.floor(Math.random()*live.length)]
+  const all=['pos','vel','hp','ai','col','snd']
+  const missing=all.filter(c=>!e.comps.includes(c))
+  if(!missing.length) return
+  const c=missing[Math.floor(Math.random()*missing.length)]
+  e.comps.push(c)
+  addLogFlat(`Added ${c} to entity #${e.id}`,'add')
+}
+
+function removeRandomComp(){
+  const live=entities.filter(e=>e.alive)
+  if(!live.length) return
+  const e=live[Math.floor(Math.random()*live.length)]
+  if(e.comps.length<=1) return
+  const c=e.comps[Math.floor(Math.random()*e.comps.length)]
+  e.comps=e.comps.filter(x=>x!==c)
+  addLogFlat(`Removed ${c} from entity #${e.id} (swap-pop)`,'rem')
+}
+
+const c3 = document.getElementById('c3d')
+const ctx3 = c3.getContext('2d')
+
+function resize3d(){
+  c3.width=c3.offsetWidth; c3.height=300
+}
+resize3d()
+
+function project(x,y,z){
+  const fov=220, cx=c3.width/2, cy=c3.height/2
+  const scale=fov/(fov+z)
+  return {x:cx+(x-cx)*scale, y:cy+(y-cy)*scale, s:scale}
+}
+
+let t=0
+function draw3d(){
+  const W=c3.width,H=c3.height
+  ctx3.clearRect(0,0,W,H)
+  t+=0.016
+
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const gridColor = dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'
+  const textColor = dark?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.35)'
+
+  // Grid floor
+  ctx3.strokeStyle=gridColor; ctx3.lineWidth=0.5
+  for(let gx=0;gx<=W;gx+=40){
+    const p1=project(gx,H*0.8,0), p2=project(gx,H*0.8,120)
+    ctx3.beginPath();ctx3.moveTo(p1.x,p1.y);ctx3.lineTo(p2.x,p2.y);ctx3.stroke()
+  }
+  for(let gz=0;gz<=120;gz+=30){
+    const p1=project(0,H*0.8,gz), p2=project(W,H*0.8,gz)
+    ctx3.beginPath();ctx3.moveTo(p1.x,p1.y);ctx3.lineTo(p2.x,p2.y);ctx3.stroke()
+  }
+
+  // Sort by z desc
+  const sorted=[...entities.filter(e=>e.alive)].sort((a,b)=>b.z-a.z)
+
+  sorted.forEach(e=>{
+    // Move
+    if(e.comps.includes('vel')){
+      e.x+=e.vx*(sysActive==='movement'?2:1)
+      e.y+=e.vy*(sysActive==='movement'?2:1)
+      e.z+=e.vz*(sysActive==='movement'?2:1)
+      if(e.x<20||e.x>W-20) e.vx*=-1
+      if(e.y<20||e.y>H-20) e.vy*=-1
+      if(e.z<0||e.z>100) e.vz*=-1
+    }
+    if(e.comps.includes('ai')&&sysActive==='ai'){
+      e.angle+=0.05; e.vx=Math.cos(e.angle)*1.5; e.vy=Math.sin(e.angle)*1.5
+    }
+
+    const p=project(e.x,e.y,e.z)
+    const r=e.r*p.s
+    const sel=e.id===selectedEnt
+
+    // Shadow
+    const ps=project(e.x,H*0.8,e.z)
+    ctx3.save();ctx3.globalAlpha=0.12*p.s
+    ctx3.beginPath();ctx3.ellipse(ps.x,ps.y,r*1.5,r*0.5,0,0,Math.PI*2)
+    ctx3.fillStyle='#000';ctx3.fill();ctx3.restore()
+
+    // Body
+    ctx3.save()
+    if(sysActive&&systemTimer>0){
+      const comp=sysActive==='movement'?'vel':'ai'
+      if(e.comps.includes(comp)){
+        ctx3.shadowColor=e.color; ctx3.shadowBlur=12*p.s
+      }
+    }
+    ctx3.beginPath()
+    if(e.type==='arrow'){ctx3.save();ctx3.translate(p.x,p.y);ctx3.rotate(e.angle);ctx3.moveTo(0,-r);ctx3.lineTo(r*0.6,r);ctx3.lineTo(-r*0.6,r);ctx3.closePath();ctx3.restore()}
+    else if(e.type==='tree'){ctx3.beginPath();ctx3.moveTo(p.x,p.y-r*1.4);ctx3.lineTo(p.x+r,p.y+r*0.6);ctx3.lineTo(p.x-r,p.y+r*0.6);ctx3.closePath()}
+    else{ctx3.arc(p.x,p.y,r,0,Math.PI*2)}
+    ctx3.fillStyle=e.color
+    ctx3.globalAlpha=0.85
+    ctx3.fill()
+    if(sel){ctx3.strokeStyle='#f59e0b';ctx3.lineWidth=2.5}else{ctx3.strokeStyle='rgba(255,255,255,0.4)';ctx3.lineWidth=0.5}
+    ctx3.stroke()
+    ctx3.restore()
+
+    // HP bar
+    if(e.comps.includes('hp')&&e.hp<e.maxHp){
+      const bw=r*2.5,bh=3,bx=p.x-bw/2,by=p.y-r-6
+      ctx3.fillStyle='rgba(0,0,0,0.3)';ctx3.fillRect(bx,by,bw,bh)
+      ctx3.fillStyle='#22c55e';ctx3.fillRect(bx,by,bw*(e.hp/e.maxHp),bh)
+    }
+
+    // ID label
+    ctx3.fillStyle=textColor;ctx3.font=`${Math.round(10*p.s)}px ${getComputedStyle(document.body).fontFamily}`
+    ctx3.textAlign='center';ctx3.fillText('#'+e.id,p.x,p.y+r+11*p.s)
+  })
+
+  if(systemTimer>0) systemTimer--
+  else sysActive=null
+
+  updateMetrics()
+}
+
+c3.addEventListener('click',ev=>{
+  const rect=c3.getBoundingClientRect()
+  const mx=ev.clientX-rect.left, my=ev.clientY-rect.top
+  let best=null,bd=999
+  entities.filter(e=>e.alive).forEach(e=>{
+    const p=project(e.x,e.y,e.z)
+    const d=Math.hypot(p.x-mx,p.y-my)
+    if(d<bd){bd=d;best=e}
+  })
+  if(best&&bd<40){
+    selectedEnt=best.id
+    addLog3d(`Selected entity #${best.id} | type:${best.type} | comps:[${best.comps.join(',')}]`)
+  }else selectedEnt=-1
+})
+
+function updateMetrics(){
+  const live=entities.filter(e=>e.alive)
+  document.getElementById('m-ent').textContent=live.length
+  document.getElementById('m-hit').textContent=hitCount
+  document.getElementById('m-miss').textContent=missCount
+
+  // Memory bars
+  const compTypes=['pos','vel','hp','ai']
+  const barIds=['bar-pos','bar-vel','bar-hp','bar-ai']
+  const colors=[C.pos,C.vel,C.hp,C.ai]
+  compTypes.forEach((c,i)=>{
+    const bar=document.getElementById(barIds[i])
+    const count=live.filter(e=>e.comps.includes(c)).length
+    const pct=live.length?count/live.length:0
+    bar.innerHTML=`<div class="mem-seg" style="width:${Math.round(pct*100)}%;background:${colors[i]};opacity:0.7"></div>`
+  })
+
+  // Cache cells
+  const cc=document.getElementById('cache-cells')
+  cc.innerHTML=''
+  const accessed=live.filter(e=>e.comps.includes('pos')).slice(0,16)
+  for(let i=0;i<16;i++){
+    const d=document.createElement('div')
+    const isHit=i<accessed.length
+    d.className='cache-cell '+(isHit?'hit':'idle')
+    d.textContent=isHit?accessed[i].id:''
+    cc.appendChild(d)
+  }
+
+  // Archetypes
+  const arcCount={}
+  live.forEach(e=>{const k=e.type;arcCount[k]=(arcCount[k]||0)+1})
+  const body=document.getElementById('arch-body')
+  body.innerHTML=''
+  Object.entries(arcCount).forEach(([type,cnt])=>{
+    const comps=ARCHETYPES[type]||[]
+    body.innerHTML+=`<tr><td style="color:${C[type]};font-weight:500">${type}</td><td>${comps.map(c=>`<span class="tag ${c}">${c}</span>`).join('')}</td><td>${cnt}</td></tr>`
+  })
+}
+
+// Flat panel canvas
+const cf=document.getElementById('cflat')
+const ctxf=cf.getContext('2d')
+function resizeFlat(){cf.width=cf.offsetWidth;cf.height=280}
+resizeFlat()
+
+let animT=0
+function drawFlat(){
+  const W=cf.width,H=cf.height
+  ctxf.clearRect(0,0,W,H)
+  animT+=0.02
+
+  const dark=window.matchMedia('(prefers-color-scheme: dark)').matches
+  const textC=dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.5)'
+  const lineC=dark?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.1)'
+  const bgC=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.03)'
+  const activeBg=dark?'rgba(139,92,246,0.25)':'rgba(139,92,246,0.12)'
+
+  // Systems pipeline
+  const sysPad=10, sysH=36, sysW=Math.floor((W-sysPad*(SYSTEMS.length+1))/SYSTEMS.length)
+  SYSTEMS.forEach((s,i)=>{
+    const sx=sysPad+(sysW+sysPad)*i, sy=12
+    const isActive=i===flatSysIndex
+    ctxf.fillStyle=isActive?activeBg:bgC
+    ctxf.strokeStyle=isActive?'#8b5cf6':lineC
+    ctxf.lineWidth=isActive?1.5:0.5
+    roundRect(ctxf,sx,sy,sysW,sysH,6)
+    ctxf.fillStyle=isActive?'#7c3aed':textC
+    ctxf.font=`${isActive?'500':'400'} 11px ${getComputedStyle(document.body).fontFamily}`
+    ctxf.textAlign='center'
+    ctxf.fillText(s,sx+sysW/2,sy+sysH/2+4)
+    if(i<SYSTEMS.length-1){
+      const ax=sx+sysW+sysPad/2
+      ctxf.strokeStyle=lineC;ctxf.lineWidth=0.8
+      ctxf.beginPath();ctxf.moveTo(ax-3,sy+sysH/2);ctxf.lineTo(ax+3,sy+sysH/2);ctxf.stroke()
+      ctxf.beginPath();ctxf.moveTo(ax+1,sy+sysH/2-3);ctxf.lineTo(ax+4,sy+sysH/2);ctxf.lineTo(ax+1,sy+sysH/2+3);ctxf.stroke()
+    }
+  })
+
+  // Component arrays visualization
+  const compY=70, compH=24, gap=6
+  const compTypes=['pos','vel','hp','ai','col','snd']
+  const live=entities.filter(e=>e.alive).slice(0,12)
+  const colW=Math.max(20,Math.floor((W-90)/Math.max(live.length,1)))
+
+  ctxf.fillStyle=textC;ctxf.font=`500 10px ${getComputedStyle(document.body).fontFamily}`;ctxf.textAlign='left'
+  ctxf.fillText('component arrays (SoA)',8,compY-6)
+
+  compTypes.forEach((c,ci)=>{
+    const y=compY+ci*(compH+gap)
+    ctxf.fillStyle=textC;ctxf.font=`10px ${getComputedStyle(document.body).fontFamily}`;ctxf.textAlign='right'
+    ctxf.fillText(c+'[]',82,y+compH/2+4)
+
+    live.forEach((e,ei)=>{
+      const x=88+ei*colW
+      const has=e.comps.includes(c)
+      const isSel=e.id===selectedEnt
+
+      if(has){
+        const pulse=isSel?0.5+0.5*Math.sin(animT*6):0
+        ctxf.globalAlpha=0.6+0.3*pulse
+        ctxf.fillStyle=COMP_COLORS[c]||'#eee'
+        roundRect2(ctxf,x+1,y+1,colW-3,compH-2,3)
+        ctxf.globalAlpha=1
+        ctxf.fillStyle=COMP_TEXT[c]||'#333'
+        ctxf.font=`400 9px ${getComputedStyle(document.body).fontFamily}`;ctxf.textAlign='center'
+        ctxf.fillText(ei,x+colW/2,y+compH/2+3)
+        if(isSel){ctxf.strokeStyle='#f59e0b';ctxf.lineWidth=1.5;roundRect(ctxf,x+1,y+1,colW-3,compH-2,3)}
+      } else {
+        ctxf.globalAlpha=0.25
+        ctxf.fillStyle=bgC
+        roundRect2(ctxf,x+1,y+1,colW-3,compH-2,3)
+        ctxf.globalAlpha=1
+        ctxf.strokeStyle=lineC;ctxf.lineWidth=0.4
+        roundRect(ctxf,x+1,y+1,colW-3,compH-2,3)
+      }
+    })
+  })
+
+  // Entity ID row
+  const eidY=compY+compTypes.length*(compH+gap)+4
+  live.forEach((e,ei)=>{
+    const x=88+ei*colW
+    const isSel=e.id===selectedEnt
+    ctxf.fillStyle=isSel?e.color:textC
+    ctxf.font=`${isSel?'500':'400'} 9px ${getComputedStyle(document.body).fontFamily}`;ctxf.textAlign='center'
+    ctxf.fillText('#'+e.id,x+colW/2,eidY+10)
+  })
+  ctxf.fillStyle=textC;ctxf.font=`10px ${getComputedStyle(document.body).fontFamily}`;ctxf.textAlign='right'
+  ctxf.fillText('entity',82,eidY+10)
+}
+
+function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);c.stroke()}
+function roundRect2(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
+
+function updateSparseVis(){
+  const live=entities.filter(e=>e.alive).slice(0,10)
+  const MAX=Math.max(15,nextId)
+  const sa=document.getElementById('sparse-arrays')
+  // sparse
+  let sparseHTML='<div class="arr-row"><div class="arr-name">sparse[]</div><div class="arr-cells">'
+  const sparseArr=new Array(MAX).fill(null)
+  live.forEach((e,di)=>{if(e.comps.includes('pos'))sparseArr[e.id]=di})
+  for(let i=0;i<Math.min(MAX,16);i++){
+    const val=sparseArr[i]
+    const isSel=live[val]?.id===selectedEnt
+    sparseHTML+=`<div class="arr-cell ${val!=null?'filled':'empty'} ${isSel?'highlighted':''}" style="${val!=null?`background:${C.pos};`:''}">
+      ${val!=null?val:'·'}</div>`
+  }
+  sparseHTML+='</div></div>'
+  // dense
+  sparseHTML+='<div class="arr-row"><div class="arr-name">dense[]</div><div class="arr-cells">'
+  live.filter(e=>e.comps.includes('pos')).forEach((e,di)=>{
+    const isSel=e.id===selectedEnt
+    sparseHTML+=`<div class="arr-cell filled ${isSel?'highlighted':''}" style="background:#1d4ed8;color:#fff">#${e.id}</div>`
+  })
+  sparseHTML+='</div></div>'
+  // data
+  sparseHTML+='<div class="arr-row"><div class="arr-name">data[]</div><div class="arr-cells">'
+  live.filter(e=>e.comps.includes('pos')).forEach((e,di)=>{
+    const isSel=e.id===selectedEnt
+    sparseHTML+=`<div class="arr-cell filled ${isSel?'highlighted':''}" style="background:#bfdbfe;color:#1e3a8a;font-size:8px">${Math.round(e.x)},${Math.round(e.y)}</div>`
+  })
+  sparseHTML+='</div></div>'
+  sa.innerHTML=sparseHTML
+
+  // comp grid
+  const cg=document.getElementById('comp-grid')
+  const ALL=['pos','vel','hp','ai','col','snd']
+  cg.innerHTML=live.map(e=>`
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:10px;color:${e.color};font-weight:500;width:28px">#${e.id}</span>
+      ${ALL.map(c=>`<span class="tag ${c}" style="${e.comps.includes(c)?'':'opacity:0.18'}">${c}</span>`).join('')}
+    </div>`).join('')
+}
+
+function loop(){
+  draw3d()
+  drawFlat()
+  updateSparseVis()
+  requestAnimationFrame(loop)
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['sim3d','simflat']
+    t.classList.toggle('active',ids[i]===id)
+  })
+  document.querySelectorAll('.panel').forEach(p=>{p.classList.remove('active')})
+  document.getElementById(id).classList.add('active')
+  resize3d(); resizeFlat()
+}
+
+document.getElementById('speed').addEventListener('input',function(){
+  document.getElementById('speed-lbl').textContent=this.value+'x'
+})
+
+window.addEventListener('resize',()=>{resize3d();resizeFlat()})
+loop()
+</script>

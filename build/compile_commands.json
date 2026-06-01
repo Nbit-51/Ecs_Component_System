@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/home/navaneeth/CPSR/MiniProjects/ECS_System/build",
+  "command": "/usr/bin/c++  -I/home/navaneeth/CPSR/MiniProjects/ECS_System/tests -I/home/navaneeth/CPSR/MiniProjects/ECS_System/include -O2 -g -DNDEBUG -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-unused-parameter -o CMakeFiles/test_ecs.dir/tests/test_ecs.cpp.o -c /home/navaneeth/CPSR/MiniProjects/ECS_System/tests/test_ecs.cpp",
+  "file": "/home/navaneeth/CPSR/MiniProjects/ECS_System/tests/test_ecs.cpp",
+  "output": "CMakeFiles/test_ecs.dir/tests/test_ecs.cpp.o"
+},
+{
+  "directory": "/home/navaneeth/CPSR/MiniProjects/ECS_System/build",
+  "command": "/usr/bin/c++  -I/home/navaneeth/CPSR/MiniProjects/ECS_System/include -O2 -g -DNDEBUG -std=c++20 -O3 -march=native -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-unused-parameter -o CMakeFiles/bench_ecs.dir/benchmarks/bench_ecs.cpp.o -c /home/navaneeth/CPSR/MiniProjects/ECS_System/benchmarks/bench_ecs.cpp",
+  "file": "/home/navaneeth/CPSR/MiniProjects/ECS_System/benchmarks/bench_ecs.cpp",
+  "output": "CMakeFiles/bench_ecs.dir/benchmarks/bench_ecs.cpp.o"
+},
+{
+  "directory": "/home/navaneeth/CPSR/MiniProjects/ECS_System/build",
+  "command": "/usr/bin/c++  -I/home/navaneeth/CPSR/MiniProjects/ECS_System/include -O2 -g -DNDEBUG -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wno-unused-parameter -o CMakeFiles/example_game.dir/src/main.cpp.o -c /home/navaneeth/CPSR/MiniProjects/ECS_System/src/main.cpp",
+  "file": "/home/navaneeth/CPSR/MiniProjects/ECS_System/src/main.cpp",
+  "output": "CMakeFiles/example_game.dir/src/main.cpp.o"
+}
+]
